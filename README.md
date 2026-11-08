@@ -135,3 +135,6 @@ Pass back the `conversation_id` on the next `send_message`. The plugin keeps at 
 Credentials are stored in `Pebble.secureStorage` separately per provider; `get_capabilities` reveals only booleans and model names. Provider domains are restricted in the plugin manifest. Session history and recent request records are stored only on the paired phone. There is no retry after uncertain delivery. Provider-specific usage billing applies.
 
 API protocol details were researched against vendor documentation. Access to a provider/model may depend on account permissions and API changes. Hardware and live account tests are still needed before App Store publication.
+
+## Reusable PebbleKit JS SDK
+Copy [sdk/ai_conversation.js](sdk/ai_conversation.js) into the consuming app's `src/pkjs`. Its `create(Pebble).send(text,{conversation_id?,request_id?,instructions?})` calls `send_message`, checks that the request ID matches, verifies the schema/receipt timestamps and returns the normalized response. The helper never exposes provider credentials, constructs a model name, or decides which API endpoint to use. The provider-specific decisions live entirely inside the plugin. A lightweight test is in `tests/sdk.test.cjs`.
