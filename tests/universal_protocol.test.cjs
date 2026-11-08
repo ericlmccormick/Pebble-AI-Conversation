@@ -43,6 +43,12 @@ function action(name,args){
  }));
 }
 function config(obj){return new Promise(resolve=>handlers.config(obj,resolve));}
+function nativeAction(name,args){return new Promise(resolve=>handlers.action({action:name,args:args||{}},{
+  ok:data=>resolve({ok:true,data:data}),error:(code,message)=>resolve({ok:false,code,message})
+}));}
+function source(item){return new Promise(resolve=>handlers.source({category:'agent',item:item},{
+  data:data=>resolve({ok:true,data:data}),error:(code,message)=>resolve({ok:false,code,message})
+}));}
 (async()=>{
  let caps=await action('get_capabilities');
  assert.equal(caps.ok,true);
@@ -108,7 +114,38 @@ function config(obj){return new Promise(resolve=>handlers.config(obj,resolve));}
   assert.equal(continuation.data.conversation_id,response.data.conversation_id);
  }
  await config({type:'save',provider:'openai',model:'gpt-5-mini'});
- const capsAfter=await action('get_capabilities');
+ // Native Core Devices contract: assistant text in result.text, not JSON text.
+ const standard=await nativeAction('send_to_agent',{message:'What is the answer?'});
+ assert.equal(standard.ok,true);
+ assert.equal(standard.data.text,'OpenAI response');
+ assert.equal(standard.data.reply_type,'assistant');
+ assert.equal(standard.data.provider,'openai');
+ assert.equal(standard.data.received,true);
+ assert.equal(standard.data.validation.reply_text_present,true);
+ assert.equal(standard.data.status,'completed');
+ const other=await nativeAction('send_to_agent',{message:'Another chat',chat_id:'new'});
+ assert.equal(other.ok,true);
+ assert.notEqual(other.data.chat_id,standard.data.chat_id);
+ const defaultReply=await nativeAction('send_to_agent',{message:'Follow up'});
+ assert.equal(defaultReply.data.chat_id,standard.data.chat_id);
+ const chats=await source('chats');
+ assert.equal(chats.ok,true);
+ assert.equal(chats.data.instances[0].instanceId,'default');
+ assert.ok(chats.data.instances.some(x=>x.instanceId===other.data.chat_id));
+ const configured=await source('configured');
+ assert.equal(configured.ok,true);
+ assert.equal(configured.data.instances[0].properties.configured.boolean.value,true);
+ const invalid=await nativeAction('send_to_agent',{message:'Hi',chat_id:'not-real'});
+ assert.equal(invalid.code,'INVALID_ARGS');
+ const {pebble}=JSON.parse(fs.readFileSync(__dirname+'/../package.json','utf8'));
+ const standardManifest=pebble.plugin.actions.find(x=>x.name==='send_to_agent');
+ assert.deepEqual(standardManifest.parameters.required,['message']);
+ assert.equal(standardManifest.parameters.properties.message.maxLength,16000);
+ assert.equal(standardManifest.callerPermissions.length,0);
+ assert.ok(pebble.plugin.sources.some(x=>x.items.includes('chats')));
+ assert.ok(pebble.plugin.sources.some(x=>x.items.includes('configured')));
+ assert.ok(!pebble.plugin.actions.some(x=>x.name==='conversation'));
+  const capsAfter=await action('get_capabilities');
  assert.equal(capsAfter.data.configured,true);
  assert.equal(capsAfter.data.configured_providers.gemini,true);
  assert.equal(capsAfter.data.configured_providers.anthropic,true);
