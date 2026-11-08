@@ -1,9 +1,9 @@
 {
-  "name": "pebble-gemini-conversation-plugin",
-  "version": "0.2.0",
+  "name": "pebble-ai-conversation-plugin",
+  "version": "0.3.0",
   "author": "Eric McCormick",
   "pebble": {
-    "displayName": "Gemini Conversation",
+    "displayName": "AI Conversation",
     "uuid": "2c5edc42-b096-4f76-b284-1f27907e6501",
     "sdkVersion": "3",
     "manifestVersion": 2,
@@ -14,13 +14,18 @@
         "name": "Internet",
         "parameters": {
           "domains": [
-            "generativelanguage.googleapis.com"
+            "generativelanguage.googleapis.com",
+            "api.openai.com",
+            "api.anthropic.com",
+            "api.x.ai",
+            "openrouter.ai",
+            "api.deepseek.com"
           ]
         }
       }
     ],
     "plugin": {
-      "description": "Shared Gemini conversation backend for Pebble apps. Text in, text out; no TTS. User-supplied Gemini API key.",
+      "description": "Provider-neutral text conversation bridge for Gemini, OpenAI, Anthropic Claude, xAI Grok, OpenRouter and DeepSeek. Secure credentials, versioned send/receive metadata and legacy Gemini compatibility.",
       "script": "src/plugin/index.js",
       "definesPermissions": [
         {
@@ -31,6 +36,16 @@
         {
           "name": "GeminiRead",
           "label": "Read Gemini plugin configuration status",
+          "kind": "read"
+        },
+        {
+          "name": "AIConverse",
+          "label": "Send messages to configured AI provider and read replies",
+          "kind": "exfiltrating"
+        },
+        {
+          "name": "AIRead",
+          "label": "Read AI conversation provider status and capabilities",
           "kind": "read"
         }
       ],
@@ -57,8 +72,41 @@
       ],
       "actions": [
         {
+          "name": "send_message",
+          "description": "Provider-neutral request/reply action. Uses the provider, model and API key configured inside this plugin. Returns full text and v1 validated message metadata; callers can supply request_id for duplicate protection.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "request_id": {
+                "type": "string",
+                "minLength": 8,
+                "maxLength": 72
+              },
+              "conversation_id": {
+                "type": "string"
+              },
+              "instructions": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "additionalProperties": false
+          },
+          "callerPermissions": [
+            "AIConverse"
+          ]
+        },
+        {
           "name": "conversation",
-          "description": "Send text to Gemini. Returns text and a reusable conversation_id. Supports optional instructions and model.",
+          "description": "Legacy compatibility for apps calling conversation({text,conversation_id?,instructions?}). Uses selected provider; returns text/conversation_id/model plus metadata. Gemini legacy IDs remain supported only with Gemini.",
           "parameters": {
             "type": "object",
             "properties": {
@@ -88,7 +136,7 @@
         },
         {
           "name": "get_config",
-          "description": "Get safe settings and configuration status (never credentials).",
+          "description": "Read selected provider, model and configuration state without credentials; retains legacy name.",
           "parameters": {
             "type": "object",
             "properties": {},
@@ -127,6 +175,37 @@
           },
           "callerPermissions": [
             "GeminiConverse"
+          ]
+        },
+        {
+          "name": "get_message",
+          "description": "Return the stored completed response or pending/failed/uncertain state of an earlier request_id; never resends the request.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "request_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "request_id"
+            ],
+            "additionalProperties": false
+          },
+          "callerPermissions": [
+            "AIConverse"
+          ]
+        },
+        {
+          "name": "get_capabilities",
+          "description": "Read schema, selected provider and model, configured status and supported providers (never returns credentials).",
+          "parameters": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "callerPermissions": [
+            "AIRead"
           ]
         }
       ]
