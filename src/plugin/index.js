@@ -350,13 +350,17 @@ async function sendUniversal(args){
       return fail('PLUGIN_UNAVAILABLE','The selected AI API returned no readable text.');
     }
     var answer=parsed.text.trim().slice(0,4000),finished=isoNow();
+    var full=String(parsed.finish_reason||'').toLowerCase();
+    var isIncomplete=full==='length'||full==='max_tokens'||full==='incomplete'||full==='max_output_tokens';
     var result={schema_version:1,request_id:id,message_id:freshMessageId(),conversation_id:conversationId,
-      status:'completed',received:true,provider:p,provider_name:PROVIDERS[p].label,model:parsed.model||model,
+      status:isIncomplete?'incomplete':'completed',received:true,
+      provider:p,provider_name:PROVIDERS[p].label,model:parsed.model||model,
       text:answer,response:{role:'assistant',text:answer},requested_at:requestedAt,
-      received_at:finished,latency_ms:Math.max(0,Date.now()-started),
+      received_at:finished,completed_at:finished,latency_ms:Math.max(0,Date.now()-started),
       provider_response_id:parsed.provider_id,finish_reason:parsed.finish_reason,
-      usage:parsed.usage,validation:{provider_http_ok:true,reply_text_present:true,request_id_unique:true}};
-    saveRequest(id,{text:args.text,provider:p,model:model,status:'completed',result:result});
+      usage:parsed.usage,validation:{provider_http_ok:true,reply_text_present:true,
+        request_id_unique:true,output_complete:!isIncomplete}};
+    saveRequest(id,{text:args.text,provider:p,model:model,status:result.status,result:result});
     saveUniversalSession(conversationId,{provider:p,model:model,
       turns:trimUniversalTurns(turns.concat([{role:'assistant',content:answer}]))});
     return {ok:true,data:result};
