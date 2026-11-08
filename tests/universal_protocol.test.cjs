@@ -118,7 +118,7 @@ function config(obj){return new Promise(resolve=>handlers.config(obj,resolve));}
  assert.equal(capsAfter.data.models.anthropic,'claude-sonnet-4-5');
  assert.equal(JSON.stringify(capsAfter).includes('anthropic-key'),false);
  // Never allow session histories from one provider or model to cross over.
- const existing=await action('get_message',{request_id:'request_gemini001'});
+ const existing=await action('get_message',{request_id:'req_gemini001'});
  const switched=await action('send_message',{text:'Wrong provider',conversation_id:existing.data.conversation_id,
    request_id:'cross_provider001'});
  assert.equal(switched.code,'INVALID_ARGS');
