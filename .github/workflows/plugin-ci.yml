@@ -81,3 +81,32 @@ jobs:
             git commit -m "build: plugin preview from ${GITHUB_SHA}"
             git push origin HEAD:builds/previews
           fi
+
+      - name: Prepare universal AI direct PBW preview
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-ai-protocol'
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ai-conversation-preview
+          cp build/*.pbw /tmp/ai-conversation-preview/AI_Conversation_preview.pbw
+          unzip -t /tmp/ai-conversation-preview/AI_Conversation_preview.pbw >/dev/null
+      - name: Publish universal AI preview PBW
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-ai-protocol'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git clean -fdx >/dev/null
+          if git ls-remote --exit-code --heads origin builds/universal-ai-preview >/dev/null; then
+            git fetch origin builds/universal-ai-preview
+            git switch -C builds/universal-ai-preview origin/builds/universal-ai-preview
+          else
+            git switch --orphan builds/universal-ai-preview
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          cp /tmp/ai-conversation-preview/AI_Conversation_preview.pbw ./
+          printf 'AI Conversation 0.3.0 preview from %s. Separate from Gemini plugin stable build.\n' "$GITHUB_SHA" > README.txt
+          git add AI_Conversation_preview.pbw README.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "build: universal AI protocol preview from ${GITHUB_SHA}"
+            git push origin HEAD:builds/universal-ai-preview
+          fi
