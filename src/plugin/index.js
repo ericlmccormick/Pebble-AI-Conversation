@@ -349,9 +349,10 @@ async function sendUniversal(args){
       saveRequest(id,{text:args.text,provider:p,model:model,status:'failed',conversation_id:conversationId,requested_at:requestedAt,error_code:'EMPTY_RESPONSE'});
       return fail('PLUGIN_UNAVAILABLE','The selected AI API returned no readable text.');
     }
-    var answer=parsed.text.trim().slice(0,4000),finished=isoNow();
+    var originalText=parsed.text.trim(),answer=originalText.slice(0,4000),finished=isoNow();
     var full=String(parsed.finish_reason||'').toLowerCase();
-    var isIncomplete=full==='length'||full==='max_tokens'||full==='incomplete'||full==='max_output_tokens';
+    var isIncomplete=originalText.length>4000||full==='length'||full==='max_tokens'||
+      full==='incomplete'||full==='max_output_tokens';
     var result={schema_version:1,request_id:id,message_id:freshMessageId(),conversation_id:conversationId,
       status:isIncomplete?'incomplete':'completed',received:true,
       provider:p,provider_name:PROVIDERS[p].label,model:parsed.model||model,
