@@ -376,6 +376,12 @@ function getMessage(args){
   var r=requestRecord(args.request_id);
   if(!r)return fail('INVALID_ARGS','Unknown request_id.');
   if(r.result)return {ok:true,data:r.result};
+  // Pebble plugin calls have a bounded action lifetime. A stale pending
+  // request is NOT proof of an in-flight job; its delivery is uncertain.
+  if(r.status==='pending'&&r.requested_at&&Date.now()-Date.parse(r.requested_at)>22000){
+    r.status='uncertain';r.error_code='DELIVERY_UNCERTAIN';
+    saveRequest(args.request_id,r);
+  }
   return {ok:true,data:{schema_version:1,request_id:args.request_id,
     status:r.status,provider:r.provider,model:r.model,requested_at:r.requested_at,
     conversation_id:r.conversation_id||null,error_code:r.error_code||null,received:false}};
