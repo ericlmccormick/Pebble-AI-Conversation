@@ -183,11 +183,15 @@ function validGenericModel(model){
 function keyId(provider){return provider==='gemini'?KEY:'ai_conversation_api_key_v1_'+provider;}
 async function providerReady(provider){return !!(await Pebble.secureStorage.getItem(keyId(provider)));}
 async function publicConfig(){
-  var provider=currentProvider();
+  var provider=currentProvider(),keys={},models=configuredModels();
+  var names=Object.keys(PROVIDERS);
+  for(var i=0;i<names.length;i++)keys[names[i]]=await providerReady(names[i]);
+  models.gemini=settings().model;
   return {schema_version:1,provider:provider,provider_name:PROVIDERS[provider].label,
-    model:selectedModel(provider),configured:await providerReady(provider),
-    returns_full_reply:true,tts:false,providers:Object.keys(PROVIDERS).map(function(p){
-      return {id:p,name:PROVIDERS[p].label};
+    model:selectedModel(provider),configured:keys[provider],
+    configured_providers:keys,models:models,
+    returns_full_reply:true,tts:false,providers:names.map(function(p){
+      return {id:p,name:PROVIDERS[p].label,default_model:PROVIDERS[p].defaultModel};
     })};
 }
 function isoNow(){return new Date().toISOString();}
