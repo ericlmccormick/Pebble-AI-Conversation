@@ -305,8 +305,8 @@ function statusCode(code){
 async function sendUniversal(args){
   args=args||{};
   var p=currentProvider(),model=selectedModel(p);
-  if(typeof args.text!=='string'||!args.text.trim()||args.text.length>4000)
-    return fail('INVALID_ARGS','Provide 1-4000 characters of text.');
+  if(typeof args.text!=='string'||!args.text.trim()||args.text.length>16000)
+    return fail('INVALID_ARGS','Provide 1-16000 characters of text.');
   if(args.instructions!==undefined&&(typeof args.instructions!=='string'||args.instructions.length>1000))
     return fail('INVALID_ARGS','Instructions must be at most 1000 characters.');
   var id=args.request_id||freshMessageId();
@@ -386,26 +386,81 @@ function getMessage(args){
     status:r.status,provider:r.provider,model:r.model,requested_at:r.requested_at,
     conversation_id:r.conversation_id||null,error_code:r.error_code||null,received:false}};
 }
-async function universalLegacyConversation(args){
-  var universalArgs={text:args.text,instructions:args.instructions};
-  // Old g-prefixed conversation IDs belong to Gemini's original history.
-  // Don't translate IDs silently; other providers require a new conversation.
-  if(args.conversation_id&&validUniversalSession(args.conversation_id))universalArgs.conversation_id=args.conversation_id;
-  else if(args.conversation_id)return fail('INVALID_ARGS','Conversation ID is not compatible with the selected provider; clear history.');
-  var r=await sendUniversal(universalArgs);
-  if(!r.ok)return r;
-  return {ok:true,data:{text:r.data.text,conversation_id:r.data.conversation_id,
-    model:r.data.model,provider:r.data.provider,request_id:r.data.request_id,
-    message_id:r.data.message_id,status:r.data.status,received_at:r.data.received_at}};
+// Core Devices agent action compatibility:
+// send_to_agent({message,chat_id?}) => native Pebble respond.ok({text,...}).
+// The destination app must still be permitted to invoke THIS plugin UUID.
+var DEFAULT_AGENT_SESSION_KEY='ai_agent_default_session_v1_';
+function defaultSessionKey(provider,model){return DEFAULT_AGENT_SESSION_KEY+provider+'_'+model;}
+function resolveAgentSession(args){
+  var provider=currentProvider(),model=selectedModel(provider);
+  var chat=args.chat_id;
+  if(chat!==undefined&&chat!==null&&typeof chat!=='string')
+    return fail('INVALID_ARGS','chat_id must be a string or null.');
+  if(chat==='new'||chat==='new-chat')return {ok:true,id:universalSessionId()};
+  if(chat&&chat!=='default'){
+    if(!validUniversalSession(chat))return fail('INVALID_ARGS','Unknown chat_id. Use a listed agent/chats instanceId, default or new.');
+    if(!universalSession(chat))return fail('INVALID_ARGS','Unknown or expired chat_id. Use the default conversation or new.');
+    return {ok:true,id:chat};
+  }
+  var key=defaultSessionKey(provider,model),id=localStorage.getItem(key);
+  if(!validUniversalSession(id)||!universalSession(id)){
+    id=universalSessionId();
+    localStorage.setItem(key,id);
+  }
+  return {ok:true,id:id};
+}
+async function sendToAgent(args){
+  if(typeof args.message!=='string'||!args.message.trim()||args.message.length>16000)
+    return fail('INVALID_ARGS','message must contain 1-16000 characters.');
+  var session=resolveAgentSession(args);
+  if(!session.ok)return session;
+  var result=await sendUniversal({text:args.message,conversation_id:session.id});
+  if(!result.ok)return result;
+  var full=result.data;
+  // Native response shape matches Core Devices agents' {text} payload.
+  // Additional fields identify an actual model answer, not merely a receipt.
+  return {ok:true,data:{text:full.text,chat_id:full.conversation_id,
+    conversation_id:full.conversation_id,message_id:full.message_id,
+    request_id:full.request_id,provider:full.provider,model:full.model,
+    status:full.status,received:full.received,
+    requested_at:full.requested_at,received_at:full.received_at,
+    provider_response_id:full.provider_response_id,
+    validation:full.validation,reply_type:'assistant'}};
+}
+function agentChats(){
+  var provider=currentProvider(),model=selectedModel(provider);
+  var key=defaultSessionKey(provider,model),id=localStorage.getItem(key);
+  var rows=[{instanceId:'default',properties:{
+    name:{shortText:{text:'Default conversation'}},
+    title:{shortText:{text:PROVIDERS[provider].label+' · '+model}}
+  }}];
+  var seen={};
+  if(validUniversalSession(id)&&universalSession(id))seen[id]=true;
+  var ids=jsonGet(SESSION_INDEX,[]);
+  if(!Array.isArray(ids))ids=[];
+  ids.slice().reverse().forEach(function(key){
+    var sid=key.slice(SESSION_PREFIX.length),record=universalSession(sid);
+    if(!record||record.provider!==provider||record.model!==model||seen[sid])return;
+    seen[sid]=true;
+    rows.push({instanceId:sid,properties:{name:{shortText:{text:'Conversation '+sid.slice(-6)}},
+      title:{shortText:{text:PROVIDERS[provider].label+' · '+model}}}});
+  });
+  return rows;
 }
 
 Pebble.registerSourceHandler(async function(request,respond){
-  if(request.item!=='configured'){respond.error('INVALID_REQUEST','Unknown source');return;}
+  if(request.category&&request.category!=='agent'){respond.error('INVALID_REQUEST','Unsupported agent category');return;}
+  if(request.item==='chats'){
+    respond.data({validUntilMs:Date.now()+60000,instances:agentChats()});return;
+  }
+  if(request.item!=='configured'){respond.error('INVALID_REQUEST','Unknown agent source');return;}
   var publicSettings=await publicConfig();
-  var configured=publicSettings.configured;
   respond.data({validUntilMs:Date.now()+120000,instances:[{
-    instanceId:'gemini',properties:{name:{shortText:{text:publicSettings.provider_name+' Conversation'}},
-      configured:{boolean:{value:configured}}}}]});
+    instanceId:'ai-conversation',properties:{
+      name:{shortText:{text:publicSettings.provider_name+' Conversation'}},
+      configured:{boolean:{value:publicSettings.configured},shortText:{text:publicSettings.configured?'Connected':'Configure API key'}}
+    }
+  }]});
 });
 Pebble.registerActionHandler(async function(request,respond){
   var args=request.args||{},r;
@@ -414,7 +469,7 @@ Pebble.registerActionHandler(async function(request,respond){
       r={ok:true,data:await publicConfig()};
       break;
     case 'list_models':r=await listModels();break;
-    case 'conversation':r=currentProvider()==='gemini'?await conversation(args):await universalLegacyConversation(args);break;
+    case 'send_to_agent':r=await sendToAgent(args);break;
     case 'send_message':r=await sendUniversal(args);break;
     case 'get_message':r=getMessage(args);break;
     case 'get_capabilities':r={ok:true,data:await publicConfig()};break;
@@ -427,6 +482,7 @@ Pebble.registerActionHandler(async function(request,respond){
     default:respond.error('INVALID_REQUEST','Unknown action');return;
   }
   if(!r.ok){respond.error(r.code,r.message);return;}
+  if(request.action==='send_to_agent'){respond.ok(r.data);return;}
   respond.ok({text:JSON.stringify(r.data).slice(0,18000)});
 });
 Pebble.registerConfigHandler(async function(message,respond){

@@ -1,6 +1,6 @@
 # AI Conversation — Pebble Plugin
 
-A provider-neutral text conversation plugin for Pebble phone apps. Version **0.3.0 preview**, developed from the existing Gemini Conversation plugin. The plugin UUID is unchanged: `2c5edc42-b096-4f76-b284-1f27907e6501`.
+A provider-neutral text conversation plugin for Pebble phone apps. Version **0.4.0 preview**, developed from the existing Gemini Conversation plugin. The plugin UUID is unchanged: `2c5edc42-b096-4f76-b284-1f27907e6501`.
 
 ## Supported providers
 - Google Gemini: native `generateContent`.
@@ -126,10 +126,15 @@ Request ID, message ID and timestamps are generated/validated locally. **The pro
 
 Pass back the `conversation_id` on the next `send_message`. The plugin keeps at most three user/assistant turns per session and 12 sessions, and rejects attempts to continue a session with a different provider or model. Avoid putting tokens, secrets or personal identifiers into a request ID.
 
-### Legacy compatibility
-- `conversation({text,conversation_id?,instructions?,model?})` still works for Gemini apps with old `g...` conversation IDs when Gemini is selected.
-- For other selected providers, it returns the familiar `text`, `conversation_id`, `model` plus additional metadata, but uses new `s...` session IDs.
-- `get_config`, `list_models`, `clear_conversation` remain available. `list_models` is Gemini-specific.
+## Standard Core Devices agent integration
+
+Apps built for Core Devices' Grok Bot, Claude, Muse, and ChatGPT agent plugins use the public action `send_to_agent({message,chat_id?})` and discover conversations through `agent/chats`, plus setup status through `agent/configured`. This plugin now exposes the **same action name, argument names, and native Pebble action response shape**. Its `respond.ok({text,...})` gives the **full assistant text** rather than a receipt, with additional `reply_type:'assistant'`, status, IDs, timestamps, and validation metadata. Existing send-only plugins may return only `{text:'Message submitted...'}`; consumers must not assume every agent returns a full answer.
+
+`chat_id` omitted or `'default'` uses a persistent default conversation for the selected provider/model, `'new'`/`'new-chat'` starts a fresh conversation, and `agent/chats` lists current session IDs. Provider or model changes cannot accidentally reuse another provider's history.
+
+**Important limitation:** Pebble `InvokeAction` permissions and target UUIDs are still enforced by the host. An app hard-coded to Grok's UUID cannot magically invoke this plugin without its UUID being selectable and permitted. Apps already using installed-agent discovery can swap to this plugin without changing their send payload/parser. Apps pinned to one UUID must add this plugin permission and/or dynamic selection. This is host-level security, not an API incompatibility.
+
+The old Gemini-specific `conversation` action has been removed from the preview. Update consuming apps to `send_to_agent` or the richer `send_message` action. `send_message` / `get_message` / `get_capabilities` remain available for strict v1 response verification.
 
 ## Security / deployment
 Credentials are stored in `Pebble.secureStorage` separately per provider; `get_capabilities` reveals only booleans and model names. Provider domains are restricted in the plugin manifest. Session history and recent request records are stored only on the paired phone. There is no retry after uncertain delivery. Provider-specific usage billing applies.

@@ -106,9 +106,6 @@ function config(obj){return new Promise(resolve=>handlers.config(obj,resolve));}
     request_id:'follow_'+provider+'001'});
   assert.equal(continuation.ok,true);
   assert.equal(continuation.data.conversation_id,response.data.conversation_id);
-  const oldInterface=await action('conversation',{text:'Legacy compatibility'});
-  assert.equal(oldInterface.ok,true);
-  assert.equal(oldInterface.data.provider,provider);
  }
  await config({type:'save',provider:'openai',model:'gpt-5-mini'});
  const capsAfter=await action('get_capabilities');

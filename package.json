@@ -1,6 +1,6 @@
 {
   "name": "pebble-ai-conversation-plugin",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "author": "Eric McCormick",
   "pebble": {
     "displayName": "AI Conversation",
@@ -25,7 +25,7 @@
       }
     ],
     "plugin": {
-      "description": "Provider-neutral text conversation bridge for Gemini, OpenAI, Anthropic Claude, xAI Grok, OpenRouter and DeepSeek. Secure credentials, versioned send/receive metadata and legacy Gemini compatibility.",
+      "description": "Provider-neutral AI conversations with standard Pebble agent send_to_agent({message,chat_id?}) and agent/chats/configured sources; Gemini, OpenAI, Claude, xAI, OpenRouter, DeepSeek.",
       "script": "src/plugin/index.js",
       "definesPermissions": [
         {
@@ -53,6 +53,23 @@
         {
           "category": "agent",
           "items": [
+            "chats"
+          ],
+          "properties": {
+            "name": [
+              "shortText"
+            ],
+            "title": [
+              "shortText"
+            ]
+          },
+          "supportsMultiple": true,
+          "callerPermissions": [],
+          "suggestedRefreshIntervalSec": 60
+        },
+        {
+          "category": "agent",
+          "items": [
             "configured"
           ],
           "properties": {
@@ -60,17 +77,48 @@
               "shortText"
             ],
             "configured": [
-              "boolean"
+              "boolean",
+              "shortText"
             ]
           },
           "supportsMultiple": false,
-          "suggestedRefreshIntervalSec": 120,
-          "callerPermissions": [
-            "GeminiRead"
-          ]
+          "callerPermissions": [],
+          "suggestedRefreshIntervalSec": 60
         }
       ],
       "actions": [
+        {
+          "name": "send_to_agent",
+          "description": "Send the user's message to the AI provider and model configured in this plugin. message is required; chat_id is an instanceId from agent/chats, 'default', or 'new' to start a conversation. Returns native text containing the full assistant answer, plus response metadata. Do not automatically retry uncertain delivery.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 16000,
+                "description": "Message to the configured AI provider."
+              },
+              "chat_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Conversation instanceId from agent/chats; 'default' or omitted uses the default, 'new' creates a new conversation."
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          "targets": [
+            "agent/chats"
+          ],
+          "destructive": false,
+          "requiresConfirmation": false,
+          "callerPermissions": []
+        },
         {
           "name": "send_message",
           "description": "Provider-neutral request/reply action. Uses the provider, model and API key configured inside this plugin. Returns full text and v1 validated message metadata; callers can supply request_id for duplicate protection.",
@@ -80,7 +128,7 @@
               "text": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 4000
+                "maxLength": 16000
               },
               "request_id": {
                 "type": "string",
@@ -102,36 +150,6 @@
           },
           "callerPermissions": [
             "AIConverse"
-          ]
-        },
-        {
-          "name": "conversation",
-          "description": "Legacy compatibility for apps calling conversation({text,conversation_id?,instructions?}). Uses selected provider; returns text/conversation_id/model plus metadata. Gemini legacy IDs remain supported only with Gemini.",
-          "parameters": {
-            "type": "object",
-            "properties": {
-              "text": {
-                "type": "string",
-                "maxLength": 4000
-              },
-              "conversation_id": {
-                "type": "string"
-              },
-              "instructions": {
-                "type": "string",
-                "maxLength": 1000
-              },
-              "model": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "text"
-            ],
-            "additionalProperties": false
-          },
-          "callerPermissions": [
-            "GeminiConverse"
           ]
         },
         {
@@ -209,6 +227,7 @@
           ]
         }
       ]
-    }
+    },
+    "version": "0.4.0"
   }
 }
