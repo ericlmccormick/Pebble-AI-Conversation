@@ -20,6 +20,7 @@ jobs:
         run: |
           node --check src/plugin/index.js
           node tests/plugin.test.cjs
+          node tests/settings_ui.test.cjs
       - name: Package directly installable Pebble plugin
         run: |
           set -euo pipefail
