@@ -11,6 +11,9 @@ permissions:
 jobs:
   plugin-build:
     runs-on: ubuntu-24.04
+    concurrency:
+      group: pebble-plugin-build-${{ github.repository }}-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
