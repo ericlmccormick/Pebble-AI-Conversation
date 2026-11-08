@@ -1,0 +1,77 @@
+name: Pebble plugin build and regression tests
+on:
+  push:
+    branches: [main, 'feature/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  plugin-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate plugin syntax and tests
+        run: |
+          node --check src/plugin/index.js
+          node tests/plugin.test.cjs
+      - name: Package directly installable Pebble plugin
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --output /tmp/pack-plugin-pbw.py \
+            https://raw.githubusercontent.com/coredevices/pebble-apps/11809f856b00b3ac5e91b6cf58c251db6aed4b56/scripts/pack-plugin-pbw.py
+          python3 /tmp/pack-plugin-pbw.py .
+          unzip -t build/*.pbw
+          python3 - <<'PY'
+          import json, glob, zipfile
+          with open('package.json',encoding='utf-8') as f:
+              package=json.load(f)
+          assert package['pebble']['uuid']=='2c5edc42-b096-4f76-b284-1f27907e6501'
+          packages=glob.glob('build/*.pbw')
+          assert len(packages)==1,packages
+          with zipfile.ZipFile(packages[0]) as z:
+              appinfo=json.loads(z.read('appinfo.json'))
+              assert appinfo['uuid']=='2c5edc42-b096-4f76-b284-1f27907e6501'
+              assert appinfo['plugin']['script']=='src/plugin/index.js'
+              assert appinfo['configPage']=='src/config.html'
+              assert 'src/config.html' in z.namelist()
+              assert 'src/plugin/index.js' in z.namelist()
+          print('Verified standalone plugin',package['name'],package['version'])
+          PY
+      - name: Upload Pebble plugin PBW artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pebble-plugin-pbw
+          path: build/*.pbw
+          if-no-files-found: error
+      - name: Prepare direct-download PBW
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pebble-plugin-preview
+          cp build/*.pbw /tmp/pebble-plugin-preview/Gemini_Conversation_plugin.pbw
+      - name: Publish direct-download PBW branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git ls-remote --exit-code --heads origin builds/previews >/dev/null; then
+            git fetch origin builds/previews
+            git switch -C builds/previews origin/builds/previews
+          else
+            git switch --orphan builds/previews
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          cp /tmp/pebble-plugin-preview/Gemini_Conversation_plugin.pbw ./
+          printf 'Development plugin PBW. Source commit: %s\n' "$GITHUB_SHA" > README.txt
+          git add Gemini_Conversation_plugin.pbw README.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "build: plugin preview from ${GITHUB_SHA}"
+            git push origin HEAD:builds/previews
+          fi
