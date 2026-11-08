@@ -145,6 +145,16 @@ function config(obj){return new Promise(resolve=>handlers.config(obj,resolve));}
  assert.equal(incomplete.data.status,'incomplete');
  assert.equal(incomplete.data.validation.output_complete,false);
  forceIncomplete=false;
+ // Stale pending requests are uncertain; the host may have been interrupted.
+ store.set('ai_conversation_request_v1_stale_req_001',JSON.stringify({
+   text:'A previous request',provider:'gemini',model:'gemini-3.8-flash',
+   status:'pending',conversation_id:'s12345678',
+   requested_at:'2026-01-01T00:00:00.000Z'
+ }));
+ const stale=await action('get_message',{request_id:'stale_req_001'});
+ assert.equal(stale.ok,true);
+ assert.equal(stale.data.status,'uncertain');
+ assert.equal(stale.data.error_code,'DELIVERY_UNCERTAIN');
  const status=await config({type:'status'});
  assert.equal(status.provider,'xai');
  assert.equal(status.returns_full_reply,true);
