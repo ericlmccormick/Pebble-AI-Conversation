@@ -79,6 +79,7 @@ jobs:
             git switch --orphan builds/previews
             git rm -rf . >/dev/null 2>&1 || true
           fi
+          rm -rf build
           rm -f Gemini_Conversation_plugin.pbw AI_Conversation_plugin.pbw
           cp /tmp/pebble-plugin-preview/Universal_AI_plugin.pbw ./
           printf 'Universal AI v0.1.0. Source commit: %s\n' "$GITHUB_SHA" > README.txt
