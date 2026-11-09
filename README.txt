@@ -1,1 +1,1 @@
-Development plugin PBW. Source commit: 7bd7cbb7b399f4812305e45dd8ccf75af28ec6ac
+Universal AI v0.1.0. Source commit: 98e828a26bb83218e368067cb3ae03766bbd1641
