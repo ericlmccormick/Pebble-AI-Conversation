@@ -72,6 +72,7 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -rf build
           if git ls-remote --exit-code --heads origin builds/previews >/dev/null; then
             git fetch origin builds/previews
             git switch -C builds/previews origin/builds/previews
@@ -79,7 +80,6 @@ jobs:
             git switch --orphan builds/previews
             git rm -rf . >/dev/null 2>&1 || true
           fi
-          rm -rf build
           rm -f Gemini_Conversation_plugin.pbw AI_Conversation_plugin.pbw
           cp /tmp/pebble-plugin-preview/Universal_AI_plugin.pbw ./
           printf 'Universal AI v0.1.0. Source commit: %s\n' "$GITHUB_SHA" > README.txt
