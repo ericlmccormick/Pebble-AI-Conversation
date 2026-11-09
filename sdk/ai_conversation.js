@@ -1,4 +1,4 @@
-/* AI Conversation SDK v1 for PebbleKit JS.
+/* Universal AI conversation SDK v1 for PebbleKit JS.
  * MIT-style reusable helper; copy into an app's src/pkjs and require it.
  * No credentials/provider/model are needed in the consuming app.
  * The host's Pebble.invokeAction enforces user grants before requests.

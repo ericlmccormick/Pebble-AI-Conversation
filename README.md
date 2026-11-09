@@ -1,6 +1,6 @@
-# AI Conversation — Pebble Plugin
+# Universal AI — Pebble Plugin
 
-A provider-neutral text conversation plugin for Pebble phone apps. Initial release **v0.1.0**, offering a unified text-in / full-reply-out interface across six AI providers. The plugin is listed under the Pebble Store's **agent** category. Plugin UUID: `2c5edc42-b096-4f76-b284-1f27907e6501`.
+**Universal AI v0.1.0** is a provider-neutral AI agent plugin for Pebble phone apps, providing a unified text-in / full-reply-out interface across six AI providers. Store category: **agent**. Plugin UUID: `2c5edc42-b096-4f76-b284-1f27907e6501`.
 
 ## Supported providers
 - Google Gemini: native `generateContent`.
@@ -128,7 +128,7 @@ Pass back the `conversation_id` on the next `send_message`. The plugin keeps at 
 
 ## Standard Core Devices agent integration
 
-Apps built for Core Devices' Grok Bot, Claude, Muse, and ChatGPT agent plugins use the public action `send_to_agent({message,chat_id?})` and discover conversations through `agent/chats`, plus setup status through `agent/configured`. This plugin now exposes the **same action name, argument names, and native Pebble action response shape**. Its `respond.ok({text,...})` gives the **full assistant text** rather than a receipt, with additional `reply_type:'assistant'`, status, IDs, timestamps, and validation metadata. Existing send-only plugins may return only `{text:'Message submitted...'}`; consumers must not assume every agent returns a full answer.
+Apps built for Core Devices' Grok Bot, Claude, Muse, and ChatGPT agent plugins use the public action `send_to_agent({message,chat_id?})` and discover conversations through `agent/chats`, plus setup status through `agent/configured`. Universal AI exposes the **same action name, argument names, and native Pebble action response shape**. Its `respond.ok({text,...})` gives the **full assistant text** rather than a receipt, with additional `reply_type:'assistant'`, status, IDs, timestamps, and validation metadata. Existing send-only plugins may return only `{text:'Message submitted...'}`; consumers must not assume every agent returns a full answer.
 
 `chat_id` omitted or `'default'` uses a persistent default conversation for the selected provider/model, `'new'`/`'new-chat'` starts a fresh conversation, and `agent/chats` lists current session IDs. Provider or model changes cannot accidentally reuse another provider's history.
 

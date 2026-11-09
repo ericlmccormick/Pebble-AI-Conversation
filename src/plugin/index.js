@@ -1,4 +1,4 @@
-/* Gemini Conversation bridge for Pebble plugin API v2.
+/* Universal AI provider-neutral bridge for Pebble plugin API v2.
  * One plugin action per invocation: store conversation context in localStorage.
  * API key lives only in Pebble.secureStorage. No credentials returned.
  */
@@ -145,7 +145,7 @@ async function conversation(args){
   }catch(e){return fail('PLUGIN_UNAVAILABLE','Gemini connection failed or timed out.');}
 }
 
-// === AI Conversation Protocol v1 ===
+// === Universal AI conversation protocol v1 ===
 // Provider and model are selected ONLY in this plugin's settings. Consuming
 // apps send text and optional request/conversation IDs, never API credentials.
 var PROVIDER_KEY='ai_conversation_provider_v1';

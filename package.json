@@ -1,9 +1,9 @@
 {
-  "name": "pebble-ai-conversation-plugin",
+  "name": "pebble-universal-ai-plugin",
   "version": "0.1.0",
   "author": "Eric McCormick",
   "pebble": {
-    "displayName": "AI Conversation",
+    "displayName": "Universal AI",
     "uuid": "2c5edc42-b096-4f76-b284-1f27907e6501",
     "sdkVersion": "3",
     "manifestVersion": 2,
@@ -25,7 +25,7 @@
       }
     ],
     "plugin": {
-      "description": "Provider-neutral AI conversations with standard Pebble agent send_to_agent({message,chat_id?}) and agent/chats/configured sources; Gemini, OpenAI, Claude, xAI, OpenRouter, DeepSeek.",
+      "description": "Universal AI is a multi-provider Pebble agent plugin. Connect to Gemini, OpenAI, Claude, Grok, OpenRouter or DeepSeek with one provider-neutral conversation API. Text in, full reply out.",
       "script": "src/plugin/index.js",
       "definesPermissions": [
         {

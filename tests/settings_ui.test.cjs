@@ -9,7 +9,7 @@ assert.match(html,/min-height:47px/);
 assert.match(html,/<select id="model"/);
 assert.match(html,/Refresh Gemini models/);
 assert.match(html,/<select id="provider"/);
-assert.match(html,/AI Conversation/);
+assert.match(html,/Universal AI/);
 assert.match(html,/anthropic/);
 assert.match(html,/openrouter/);
 assert.match(html,/send_message/);

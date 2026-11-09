@@ -228,7 +228,8 @@ function source(item){return new Promise(resolve=>handlers.source({category:'age
  assert.equal(actions.some(a=>a.name==='get_capabilities'),true);
  assert.equal(manifest.pebble.usesPermissions[0].parameters.domains.length,6);
  assert.equal(manifest.version,manifest.pebble.version,'package and Pebble versions must match');
- assert.equal(manifest.pebble.displayName,'AI Conversation');
+ assert.equal(manifest.pebble.displayName,'Universal AI');
+ assert.equal(manifest.name,'pebble-universal-ai-plugin');
  assert.ok(manifest.pebble.plugin.sources.length>0);
  assert.ok(manifest.pebble.plugin.sources.every(x=>x.category==='agent'),
    'all plugin source categories must be agent');
