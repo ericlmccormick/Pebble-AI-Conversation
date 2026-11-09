@@ -25,7 +25,7 @@ These are official API endpoints; consumer ChatGPT Plus, Google AI Pro, Claude s
 | [javierorp/pebble-aimigo](https://github.com/javierorp/pebble-aimigo) | OpenAI-compatible chat API patterns and independent TTS |
 | [coredevices/pebble-apps](https://github.com/coredevices/pebble-apps) | Plugin action permission manifest, phone-side settings, and discoverable `agent/configured` source |
 
-We did **not** copy third-party code. Contracts are adapted for Pebble plugin action calls and a strict phone-side session boundary. Streaming audio is deliberately left to the independent [Google Cloud TTS plugin](https://github.com/ericlmccormick/Pebble-Google-TTS-plugin).
+We did **not** copy third-party code. Contracts are adapted for Pebble plugin action calls and a strict phone-side session boundary. Streaming audio is deliberately left to the independent [Universal TTS plugin](https://github.com/ericlmccormick/Pebble-Universal-TTS).
 
 ## Recommended contract v1
 
