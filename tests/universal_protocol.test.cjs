@@ -75,12 +75,20 @@ function source(item){return new Promise(resolve=>handlers.source({category:'age
  assert.equal(result.data.request_id,'req_gemini001');
  assert.ok(result.data.message_id);
  assert.ok(result.data.conversation_id);
+ const legacy=await action('conversation',{text:'Legacy Gemini test'});
+ assert.equal(legacy.ok,true);
+ assert.ok(legacy.data.conversation_id.startsWith('g'));
  const n=calls.length;
  let retry=await action('send_message',{text:'Hello',request_id:'req_gemini001'});
  assert.equal(retry.data.message_id,result.data.message_id);
  assert.equal(calls.length,n,'same request_id must not resend');
  retry=await action('send_message',{text:'Different',request_id:'req_gemini001'});
  assert.equal(retry.code,'INVALID_ARGS');
+ retry=await action('send_message',{text:'Hello',request_id:'req_gemini001',conversation_id:'s123456789'});
+ assert.equal(retry.code,'INVALID_ARGS','cannot reuse request ID for another session');
+ retry=await action('send_message',{text:'Hello',request_id:'req_gemini001',instructions:'Different'});
+ assert.equal(retry.code,'INVALID_ARGS','cannot reuse request ID for other instructions');
+ assert.equal(calls.length,n,'collisions cannot send duplicate requests');
  let reading=await action('get_message',{request_id:'req_gemini001'});
  assert.equal(reading.data.message_id,result.data.message_id);
 
@@ -144,7 +152,9 @@ function source(item){return new Promise(resolve=>handlers.source({category:'age
  assert.equal(standardManifest.callerPermissions.length,0);
  assert.ok(pebble.plugin.sources.some(x=>x.items.includes('chats')));
  assert.ok(pebble.plugin.sources.some(x=>x.items.includes('configured')));
- assert.ok(!pebble.plugin.actions.some(x=>x.name==='conversation'));
+ const legacyAction=pebble.plugin.actions.find(x=>x.name==='conversation');
+ assert.deepEqual(legacyAction.callerPermissions,['GeminiConverse']);
+ assert.ok(pebble.plugin.actions.some(x=>x.name==='clear_ai_conversation'&&x.callerPermissions.includes('AIConverse')));
   const capsAfter=await action('get_capabilities');
  assert.equal(capsAfter.data.configured,true);
  assert.equal(capsAfter.data.configured_providers.gemini,true);
@@ -179,6 +189,12 @@ function source(item){return new Promise(resolve=>handlers.source({category:'age
  assert.equal(incomplete.data.status,'incomplete');
  assert.equal(incomplete.data.validation.output_complete,false);
  forceIncomplete=false;
+ const beforeForget=await action('get_message',{request_id:'request_anthropic001'});
+ assert.equal(beforeForget.ok,true);
+ const forgetGemini=await config({type:'forget',provider:'gemini'});
+ assert.equal(forgetGemini.ok,true);
+ assert.equal((await action('get_message',{request_id:'req_gemini001'})).code,'INVALID_ARGS');
+ assert.equal((await action('get_message',{request_id:'request_anthropic001'})).ok,true);
  // Stale pending requests are uncertain; the host may have been interrupted.
  store.set('ai_conversation_request_v1_stale_req_001',JSON.stringify({
    text:'A previous request',provider:'gemini',model:'gemini-3.8-flash',
@@ -192,8 +208,9 @@ function source(item){return new Promise(resolve=>handlers.source({category:'age
  const status=await config({type:'status'});
  assert.equal(status.provider,'xai');
  assert.equal(status.returns_full_reply,true);
- const clear=await action('clear_conversation',{all:true});
+ const clear=await action('clear_ai_conversation',{all:true});
  assert.equal(clear.ok,true);
+ assert.equal((await action('get_message',{request_id:'request_anthropic001'})).code,'INVALID_ARGS');
  const manifest=JSON.parse(fs.readFileSync(__dirname+'/../package.json','utf8'));
  assert.equal(manifest.pebble.uuid,'2c5edc42-b096-4f76-b284-1f27907e6501');
  const actions=manifest.pebble.plugin.actions;

@@ -22,6 +22,8 @@ const api=lib.create(Pebble);
  assert.equal(reply.status,'completed');
  assert.equal(last.action,'send_message');
  assert.equal(last.args.request_id,'watch_request001');
+  await api.clearConversation(reply.conversation_id);
+  assert.equal(last.action,'clear_ai_conversation');
  assert.equal('provider' in last.args,false);
  assert.equal('model' in last.args,false);
  assert.equal('api_key' in last.args,false);

@@ -29,6 +29,7 @@ let listed=await req('list_models');assert.equal(listed.ok,true);
 assert.equal(listed.data.models.length,2);
 r=await req('send_message',{text:'Hello'});assert.equal(r.ok,true);assert.equal(r.data.text,'Test reply 1');let id=r.data.conversation_id;
 r=await req('send_message',{text:'Again',conversation_id:id});assert.equal(r.ok,true);assert.equal(r.data.conversation_id,id);
+r=await req('conversation',{text:'Legacy Gemini interface'});assert.equal(r.ok,true);assert.ok(r.data.text.startsWith('Test reply '));assert.ok(r.data.conversation_id.startsWith('g'));
 r=await req('get_config');assert.equal(r.data.configured,true);assert.equal(r.data.model,'gemini-3.8-flash');
 r=await req('clear_conversation',{conversation_id:id});assert.equal(r.ok,true);
 await config({type:'forget'},()=>{});r=await req('get_config');assert.equal(r.data.configured,false);

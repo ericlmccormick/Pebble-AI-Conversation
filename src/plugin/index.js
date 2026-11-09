@@ -211,10 +211,42 @@ function indexedSave(indexKey,key,max,value){
   localStorage.setItem(key,JSON.stringify(value));
   localStorage.setItem(indexKey,JSON.stringify(ids));
 }
-function saveRequest(id,record){indexedSave(REQUEST_INDEX,REQUEST_PREFIX+id,MAX_REQUESTS,record);}
+function saveRequest(id,record){
+  var prior=requestRecord(id);
+  if(prior){
+    if(record.requested_conversation_id===undefined)
+      record.requested_conversation_id=prior.requested_conversation_id||null;
+    if(record.instructions===undefined)record.instructions=prior.instructions||'';
+  }
+  indexedSave(REQUEST_INDEX,REQUEST_PREFIX+id,MAX_REQUESTS,record);
+}
 function requestRecord(id){return validRequestId(id)?jsonGet(REQUEST_PREFIX+id,null):null;}
 function saveUniversalSession(id,value){indexedSave(SESSION_INDEX,SESSION_PREFIX+id,MAX_UNIVERSAL_SESSIONS,value);}
 function universalSession(id){return validUniversalSession(id)?jsonGet(SESSION_PREFIX+id,null):null;}
+function clearRequestRecords(conversationId,provider){
+  var ids=jsonGet(REQUEST_INDEX,[]);
+  if(!Array.isArray(ids))ids=[];
+  var kept=[];
+  ids.forEach(function(key){
+    var r=jsonGet(key,null);
+    if((!conversationId||(r&&r.conversation_id===conversationId))&&
+       (!provider||(r&&r.provider===provider)))localStorage.removeItem(key);
+    else kept.push(key);
+  });
+  localStorage.setItem(REQUEST_INDEX,JSON.stringify(kept));
+}
+function clearProviderHistory(provider){
+  var ids=jsonGet(SESSION_INDEX,[]);
+  if(!Array.isArray(ids))ids=[];
+  var kept=[];
+  ids.forEach(function(key){
+    var r=jsonGet(key,null);
+    if(r&&r.provider===provider)localStorage.removeItem(key);
+    else kept.push(key);
+  });
+  localStorage.setItem(SESSION_INDEX,JSON.stringify(kept));
+  clearRequestRecords(null,provider);
+}
 function clearUniversalHistory(id){
   if(id){
     localStorage.removeItem(SESSION_PREFIX+id);
@@ -302,6 +334,11 @@ function statusCode(code){
   if(code===400||code===404||code===422)return 'INVALID_ARGS';
   return 'PLUGIN_UNAVAILABLE';
 }
+function sameRequest(r,args,p,model){
+  return r.text===args.text&&r.provider===p&&r.model===model&&
+    (r.requested_conversation_id||null)===(args.conversation_id||null)&&
+    (r.instructions||'')===(args.instructions||'');
+}
 async function sendUniversal(args){
   args=args||{};
   var p=currentProvider(),model=selectedModel(p);
@@ -313,7 +350,7 @@ async function sendUniversal(args){
   if(!validRequestId(id))return fail('INVALID_ARGS','Invalid request_id.');
   var old=requestRecord(id);
   if(old){
-    if(old.text!==args.text||old.provider!==p||old.model!==model)
+    if(!sameRequest(old,args,p,model))
       return fail('INVALID_ARGS','request_id already used for another message or provider.');
     if(old.result)return {ok:true,data:old.result};
     return fail('DELIVERY_UNCERTAIN','Request already submitted; check get_message. No automatic retry.');
@@ -325,11 +362,21 @@ async function sendUniversal(args){
     return fail('INVALID_ARGS','Conversation belongs to another provider/model; start a new conversation.');
   var token=await Pebble.secureStorage.getItem(keyId(p));
   if(!token)return fail('AUTH_REQUIRED','Configure the selected AI provider in plugin settings.');
+  // A second check closes the race during the asynchronous key lookup.
+  var concurrent=requestRecord(id);
+  if(concurrent){
+    if(!sameRequest(concurrent,args,p,model))
+      return fail('INVALID_ARGS','request_id already used for different message, session or instructions.');
+    if(concurrent.result)return {ok:true,data:concurrent.result};
+    return fail('DELIVERY_UNCERTAIN','Request already submitted; check get_message. No automatic retry.');
+  }
   var started=Date.now(),requestedAt=isoNow();
   var system='You are a helpful smartwatch assistant. Reply concisely in plain text without markdown.';
   if(args.instructions)system+='\n'+args.instructions;
   var turns=trimUniversalTurns(session&&session.turns||[]).concat([{role:'user',content:args.text}]);
-  saveRequest(id,{text:args.text,provider:p,model:model,conversation_id:conversationId,requested_at:requestedAt,status:'pending'});
+  saveRequest(id,{text:args.text,provider:p,model:model,conversation_id:conversationId,
+    requested_conversation_id:args.conversation_id||null,instructions:args.instructions||'',
+    requested_at:requestedAt,status:'pending'});
   var outbound=requestFor(p,model,system,turns);
   if(p==='gemini')outbound.headers['x-goog-api-key']=token;
   else if(p==='anthropic')outbound.headers['x-api-key']=token;
@@ -469,14 +516,16 @@ Pebble.registerActionHandler(async function(request,respond){
       r={ok:true,data:await publicConfig()};
       break;
     case 'list_models':r=await listModels();break;
+    case 'conversation':r=await conversation(args);break; // Legacy Gemini contract.
     case 'send_to_agent':r=await sendToAgent(args);break;
     case 'send_message':r=await sendUniversal(args);break;
     case 'get_message':r=getMessage(args);break;
     case 'get_capabilities':r={ok:true,data:await publicConfig()};break;
     case 'clear_conversation':
-      if(args.all===true){clearAll();clearUniversalHistory();r={ok:true,data:{cleared:'all'}};}
+    case 'clear_ai_conversation':
+      if(args.all===true){clearAll();clearUniversalHistory();clearRequestRecords();r={ok:true,data:{cleared:'all'}};}
       else if(validId(args.conversation_id)){clearSession(args.conversation_id);r={ok:true,data:{cleared:args.conversation_id}};}
-      else if(validUniversalSession(args.conversation_id)){clearUniversalHistory(args.conversation_id);r={ok:true,data:{cleared:args.conversation_id}};}
+      else if(validUniversalSession(args.conversation_id)){clearUniversalHistory(args.conversation_id);clearRequestRecords(args.conversation_id);r={ok:true,data:{cleared:args.conversation_id}};}
       else r=fail('INVALID_ARGS','Provide conversation_id or all=true.');
       break;
     default:respond.error('INVALID_REQUEST','Unknown action');return;
@@ -525,16 +574,18 @@ Pebble.registerConfigHandler(async function(message,respond){
   if(m.type==='forget'&&m.provider&&m.provider!=='gemini'){
     if(!PROVIDERS[m.provider]){respond({ok:false,error:'Unknown provider.'});return;}
     await Pebble.secureStorage.removeItem(keyId(m.provider));
+    clearProviderHistory(m.provider);
+    Pebble.refreshSources(['agent/configured','agent/chats']);
     respond({ok:true,provider:m.provider});return;
   }
   if(m.type==='forget'){
     await Pebble.secureStorage.removeItem(KEY);
     localStorage.removeItem(MODEL);
     localStorage.removeItem(CATALOG_KEY);
-    clearAll();clearUniversalHistory();
-    Pebble.refreshSources(['agent/configured']);
+    clearAll();clearProviderHistory('gemini');
+    Pebble.refreshSources(['agent/configured','agent/chats']);
     respond({ok:true});return;
   }
-  if(m.type==='clear_history'){clearAll();clearUniversalHistory();respond({ok:true});return;}
+  if(m.type==='clear_history'){clearAll();clearUniversalHistory();clearRequestRecords();Pebble.refreshSources(['agent/chats']);respond({ok:true});return;}
   respond({ok:false,error:'Unknown configuration request.'});
 });

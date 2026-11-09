@@ -134,7 +134,7 @@ Apps built for Core Devices' Grok Bot, Claude, Muse, and ChatGPT agent plugins u
 
 **Important limitation:** Pebble `InvokeAction` permissions and target UUIDs are still enforced by the host. An app hard-coded to Grok's UUID cannot magically invoke this plugin without its UUID being selectable and permitted. Apps already using installed-agent discovery can swap to this plugin without changing their send payload/parser. Apps pinned to one UUID must add this plugin permission and/or dynamic selection. This is host-level security, not an API incompatibility.
 
-The old Gemini-specific `conversation` action has been removed from the preview. Update consuming apps to `send_to_agent` or the richer `send_message` action. `send_message` / `get_message` / `get_capabilities` remain available for strict v1 response verification.
+The original Gemini-specific `conversation` action remains available for existing clients using `GeminiConverse`; its response and session formats are unchanged. New apps should use `send_to_agent` or `send_message`. The SDK now uses `clear_ai_conversation` with `AIConverse`; old clients may continue using `clear_conversation`. Clearing history also clears stored replies; forgetting one provider only clears that provider's data.
 
 ## Security / deployment
 Credentials are stored in `Pebble.secureStorage` separately per provider; `get_capabilities` reveals only booleans and model names. Provider domains are restricted in the plugin manifest. Session history and recent request records are stored only on the paired phone. There is no retry after uncertain delivery. Provider-specific usage billing applies.

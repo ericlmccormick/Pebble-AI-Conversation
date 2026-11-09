@@ -63,7 +63,7 @@ function create(Pebble,options){
   }
   function getMessage(id){return invoke('get_message',{request_id:id});}
   function getCapabilities(){return invoke('get_capabilities',{});}
-  function clearConversation(id){return invoke('clear_conversation',id?{conversation_id:id}:{all:true});}
+  function clearConversation(id){return invoke('clear_ai_conversation',id?{conversation_id:id}:{all:true});}
   return {send:send,getMessage:getMessage,getCapabilities:getCapabilities,
     clearConversation:clearConversation,requestId:requestId,validate:validMessage,
     pluginId:uuid};

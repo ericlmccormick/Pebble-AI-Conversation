@@ -153,6 +153,36 @@
           ]
         },
         {
+          "name": "conversation",
+          "description": "Legacy Gemini-only conversation action retained for existing consumers.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "maxLength": 4000
+              },
+              "conversation_id": {
+                "type": "string"
+              },
+              "instructions": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "model": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "additionalProperties": false
+          },
+          "callerPermissions": [
+            "GeminiConverse"
+          ]
+        },
+        {
           "name": "get_config",
           "description": "Read selected provider, model and configuration state without credentials; retains legacy name.",
           "parameters": {
@@ -193,6 +223,25 @@
           },
           "callerPermissions": [
             "GeminiConverse"
+          ]
+        },
+        {
+          "name": "clear_ai_conversation",
+          "description": "Clear AI conversations and cached responses, using universal AIConverse permission.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "conversation_id": {
+                "type": "string"
+              },
+              "all": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          },
+          "callerPermissions": [
+            "AIConverse"
           ]
         },
         {
