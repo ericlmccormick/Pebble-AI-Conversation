@@ -61,6 +61,7 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/pebble-plugin-preview
           cp build/*.pbw /tmp/pebble-plugin-preview/Gemini_Conversation_plugin.pbw
+          cp build/*.pbw /tmp/pebble-plugin-preview/AI_Conversation_plugin.pbw
       - name: Publish direct-download PBW branch
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
@@ -75,8 +76,9 @@ jobs:
             git rm -rf . >/dev/null 2>&1 || true
           fi
           cp /tmp/pebble-plugin-preview/Gemini_Conversation_plugin.pbw ./
+          cp /tmp/pebble-plugin-preview/AI_Conversation_plugin.pbw ./
           printf 'Development plugin PBW. Source commit: %s\n' "$GITHUB_SHA" > README.txt
-          git add Gemini_Conversation_plugin.pbw README.txt
+          git add Gemini_Conversation_plugin.pbw AI_Conversation_plugin.pbw README.txt
           if ! git diff --cached --quiet; then
             git commit -m "build: plugin preview from ${GITHUB_SHA}"
             git push origin HEAD:builds/previews
