@@ -1,1 +1,1 @@
-AI Conversation 0.4.0 preview from ded9666e551f60872870b7c5d339c46294041caf. Universal AI plugin candidate.
+AI Conversation 0.4.0 preview from 92519dfd8f0707702082baf476348c71bb96af4d. Universal AI plugin candidate.
