@@ -1,6 +1,6 @@
 {
   "name": "pebble-ai-conversation-plugin",
-  "version": "0.4.0",
+  "version": "0.1.0",
   "author": "Eric McCormick",
   "pebble": {
     "displayName": "AI Conversation",
@@ -277,6 +277,6 @@
         }
       ]
     },
-    "version": "0.4.0"
+    "version": "0.1.0"
   }
 }

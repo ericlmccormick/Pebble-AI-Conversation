@@ -227,5 +227,10 @@ function source(item){return new Promise(resolve=>handlers.source({category:'age
  assert.equal(actions.some(a=>a.name==='get_message'),true);
  assert.equal(actions.some(a=>a.name==='get_capabilities'),true);
  assert.equal(manifest.pebble.usesPermissions[0].parameters.domains.length,6);
+ assert.equal(manifest.version,manifest.pebble.version,'package and Pebble versions must match');
+ assert.equal(manifest.pebble.displayName,'AI Conversation');
+ assert.ok(manifest.pebble.plugin.sources.length>0);
+ assert.ok(manifest.pebble.plugin.sources.every(x=>x.category==='agent'),
+   'all plugin source categories must be agent');
  console.log('PASS: multi-provider requests, credentials, IDs, timestamps, duplicate protection, errors, validation, legacy API');
 })().catch(e=>{console.error(e);process.exitCode=1;});

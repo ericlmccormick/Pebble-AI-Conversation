@@ -1,6 +1,6 @@
 # AI Conversation — Pebble Plugin
 
-A provider-neutral text conversation plugin for Pebble phone apps. Version **0.4.0 preview**, developed from the existing Gemini Conversation plugin. The plugin UUID is unchanged: `2c5edc42-b096-4f76-b284-1f27907e6501`.
+A provider-neutral text conversation plugin for Pebble phone apps. Initial release **v0.1.0**, offering a unified text-in / full-reply-out interface across six AI providers. The plugin is listed under the Pebble Store's **agent** category. Plugin UUID: `2c5edc42-b096-4f76-b284-1f27907e6501`.
 
 ## Supported providers
 - Google Gemini: native `generateContent`.
@@ -134,7 +134,7 @@ Apps built for Core Devices' Grok Bot, Claude, Muse, and ChatGPT agent plugins u
 
 **Important limitation:** Pebble `InvokeAction` permissions and target UUIDs are still enforced by the host. An app hard-coded to Grok's UUID cannot magically invoke this plugin without its UUID being selectable and permitted. Apps already using installed-agent discovery can swap to this plugin without changing their send payload/parser. Apps pinned to one UUID must add this plugin permission and/or dynamic selection. This is host-level security, not an API incompatibility.
 
-The original Gemini-specific `conversation` action remains available for existing clients using `GeminiConverse`; its response and session formats are unchanged. New apps should use `send_to_agent` or `send_message`. The SDK now uses `clear_ai_conversation` with `AIConverse`; old clients may continue using `clear_conversation`. Clearing history also clears stored replies; forgetting one provider only clears that provider's data.
+For new integrations, use `send_to_agent` or `send_message`. The original Gemini-specific `conversation` interface is also available for direct Gemini experiments; it isn't required by the universal API. The SDK uses `clear_ai_conversation` with `AIConverse`. Clearing history also clears stored replies, and forgetting one provider only clears that provider's data.
 
 ## Security / deployment
 Credentials are stored in `Pebble.secureStorage` separately per provider; `get_capabilities` reveals only booleans and model names. Provider domains are restricted in the plugin manifest. Session history and recent request records are stored only on the paired phone. There is no retry after uncertain delivery. Provider-specific usage billing applies.
