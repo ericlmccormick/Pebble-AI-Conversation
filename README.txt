@@ -1,1 +1,1 @@
-AI Conversation 0.3.0 preview from 052e4f68ed6d6c0ec8b7b0c6fd6f194a39cd1004. Separate from Gemini plugin stable build.
+AI Conversation 0.4.0 preview from ded9666e551f60872870b7c5d339c46294041caf. Universal AI plugin candidate.
