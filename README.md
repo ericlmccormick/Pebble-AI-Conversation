@@ -27,6 +27,8 @@ These are official API endpoints; consumer ChatGPT Plus, Google AI Pro, Claude s
 
 We did **not** copy third-party code. Contracts are adapted for Pebble plugin action calls and a strict phone-side session boundary. Streaming audio is deliberately left to the independent [Universal TTS plugin](https://github.com/ericlmccormick/Pebble-Universal-TTS).
 
+**Developer SDK:** [Integration guide and reusable JavaScript client](sdk/README.md).
+
 ## Recommended contract v1
 
 Add these permissions to the consuming Pebble app:
