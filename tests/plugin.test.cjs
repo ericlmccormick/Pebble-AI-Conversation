@@ -18,7 +18,7 @@ const fetch=async(url,options)=>{
 };
 vm.runInNewContext(fs.readFileSync(__dirname+'/../src/plugin/index.js','utf8'),{Pebble,localStorage,fetch,Date,Math,JSON,Promise,console});
 function req(name,args){return new Promise(resolve=>action({action:name,args:args||{}},{ok:x=>resolve({ok:true,data:JSON.parse(x.text)}),error:(code,message)=>resolve({ok:false,code,message})}));}
-(async()=>{let r=await req('conversation',{text:'Hello'});assert.equal(r.code,'AUTH_REQUIRED');
+(async()=>{let r=await req('send_message',{text:'Hello'});assert.equal(r.code,'AUTH_REQUIRED');
 await config({type:'save',api_key:'secret',model:'gemini-3.8-flash'},()=>{});
 let modelResult=await new Promise(resolve=>config({type:'models'},resolve));
 assert.equal(modelResult.ok,true);
@@ -27,8 +27,9 @@ assert.equal(modelResult.models.some(x=>x.id.includes('tts')||x.id.includes('liv
 assert.equal(JSON.stringify(modelResult).includes('secret'),false);
 let listed=await req('list_models');assert.equal(listed.ok,true);
 assert.equal(listed.data.models.length,2);
-r=await req('conversation',{text:'Hello'});assert.equal(r.ok,true);assert.equal(r.data.text,'Test reply 1');let id=r.data.conversation_id;
-r=await req('conversation',{text:'Again',conversation_id:id});assert.equal(r.ok,true);assert.equal(r.data.conversation_id,id);
+r=await req('send_message',{text:'Hello'});assert.equal(r.ok,true);assert.equal(r.data.text,'Test reply 1');let id=r.data.conversation_id;
+r=await req('send_message',{text:'Again',conversation_id:id});assert.equal(r.ok,true);assert.equal(r.data.conversation_id,id);
+r=await req('conversation',{text:'Legacy Gemini interface'});assert.equal(r.ok,true);assert.ok(r.data.text.startsWith('Test reply '));assert.ok(r.data.conversation_id.startsWith('g'));
 r=await req('get_config');assert.equal(r.data.configured,true);assert.equal(r.data.model,'gemini-3.8-flash');
 r=await req('clear_conversation',{conversation_id:id});assert.equal(r.ok,true);
 await config({type:'forget'},()=>{});r=await req('get_config');assert.equal(r.data.configured,false);

@@ -24,6 +24,8 @@ jobs:
           node --check src/plugin/index.js
           node tests/plugin.test.cjs
           node tests/settings_ui.test.cjs
+          node tests/universal_protocol.test.cjs
+          node tests/sdk.test.cjs
       - name: Package directly installable Pebble plugin
         run: |
           set -euo pipefail
@@ -59,6 +61,7 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/pebble-plugin-preview
           cp build/*.pbw /tmp/pebble-plugin-preview/Gemini_Conversation_plugin.pbw
+          cp build/*.pbw /tmp/pebble-plugin-preview/AI_Conversation_plugin.pbw
       - name: Publish direct-download PBW branch
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
@@ -73,9 +76,40 @@ jobs:
             git rm -rf . >/dev/null 2>&1 || true
           fi
           cp /tmp/pebble-plugin-preview/Gemini_Conversation_plugin.pbw ./
+          cp /tmp/pebble-plugin-preview/AI_Conversation_plugin.pbw ./
           printf 'Development plugin PBW. Source commit: %s\n' "$GITHUB_SHA" > README.txt
-          git add Gemini_Conversation_plugin.pbw README.txt
+          git add Gemini_Conversation_plugin.pbw AI_Conversation_plugin.pbw README.txt
           if ! git diff --cached --quiet; then
             git commit -m "build: plugin preview from ${GITHUB_SHA}"
             git push origin HEAD:builds/previews
+          fi
+
+      - name: Prepare universal AI direct PBW preview
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-ai-protocol'
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ai-conversation-preview
+          cp build/*.pbw /tmp/ai-conversation-preview/AI_Conversation_preview.pbw
+          unzip -t /tmp/ai-conversation-preview/AI_Conversation_preview.pbw >/dev/null
+      - name: Publish universal AI preview PBW
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feature/universal-ai-protocol'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          plugin_version=$(node -p "require('./package.json').version")
+          git clean -fdx >/dev/null
+          if git ls-remote --exit-code --heads origin builds/universal-ai-preview >/dev/null; then
+            git fetch origin builds/universal-ai-preview
+            git switch -C builds/universal-ai-preview origin/builds/universal-ai-preview
+          else
+            git switch --orphan builds/universal-ai-preview
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+          cp /tmp/ai-conversation-preview/AI_Conversation_preview.pbw ./
+          printf 'AI Conversation %s preview from %s. Universal AI plugin candidate.\n' "$plugin_version" "$GITHUB_SHA" > README.txt
+          git add AI_Conversation_preview.pbw README.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "build: universal AI protocol preview from ${GITHUB_SHA}"
+            git push origin HEAD:builds/universal-ai-preview
           fi
