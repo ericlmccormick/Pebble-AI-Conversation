@@ -75,6 +75,15 @@ function source(item){return new Promise(resolve=>handlers.source({category:'age
  assert.equal(result.data.request_id,'req_gemini001');
  assert.ok(result.data.message_id);
  assert.ok(result.data.conversation_id);
+ // Concurrent calls with the same request ID must send only once.
+ const beforeParallel=calls.length;
+ const parallel=await Promise.all([
+   action('send_message',{text:'Parallel request',request_id:'parallel_gemini001'}),
+   action('send_message',{text:'Parallel request',request_id:'parallel_gemini001'})
+ ]);
+ assert.equal(calls.length,beforeParallel+1);
+ assert.equal(parallel.filter(r=>r.ok).length,1);
+ assert.equal(parallel.filter(r=>r.code==='DELIVERY_UNCERTAIN').length,1);
  const legacy=await action('conversation',{text:'Legacy Gemini test'});
  assert.equal(legacy.ok,true);
  assert.ok(legacy.data.conversation_id.startsWith('g'));

@@ -95,6 +95,7 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          plugin_version=$(node -p "require('./package.json').version")
           git clean -fdx >/dev/null
           if git ls-remote --exit-code --heads origin builds/universal-ai-preview >/dev/null; then
             git fetch origin builds/universal-ai-preview
@@ -104,7 +105,7 @@ jobs:
             git rm -rf . >/dev/null 2>&1 || true
           fi
           cp /tmp/ai-conversation-preview/AI_Conversation_preview.pbw ./
-          printf 'AI Conversation 0.3.0 preview from %s. Separate from Gemini plugin stable build.\n' "$GITHUB_SHA" > README.txt
+          printf 'AI Conversation %s preview from %s. Universal AI plugin candidate.\n' "$plugin_version" "$GITHUB_SHA" > README.txt
           git add AI_Conversation_preview.pbw README.txt
           if ! git diff --cached --quiet; then
             git commit -m "build: universal AI protocol preview from ${GITHUB_SHA}"
