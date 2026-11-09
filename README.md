@@ -143,3 +143,20 @@ API protocol details were researched against vendor documentation. Access to a p
 
 ## Reusable PebbleKit JS SDK
 Copy [sdk/ai_conversation.js](sdk/ai_conversation.js) into the consuming app's `src/pkjs`. Its `create(Pebble).send(text,{conversation_id?,request_id?,instructions?})` calls `send_message`, checks that the request ID matches, verifies the schema/receipt timestamps and returns the normalized response. The helper never exposes provider credentials, constructs a model name, or decides which API endpoint to use. The provider-specific decisions live entirely inside the plugin. A lightweight test is in `tests/sdk.test.cjs`.
+
+## Publishing assets
+
+The plugin-only PBW is installable on the **phone**, not a watchapp with a watch launcher.
+Its category is `agent` (derived from both manifest `plugin.sources`).
+Version is `0.1.0`; its UUID is unchanged.
+
+The release workflow renders icon artwork from `store-assets/universal-ai-icon.svg`
+and the binary 25-pixel mask in `store-assets/universal-ai-menu-25.svg`.
+Pebble App Store listing icons are uploaded **separately** from the plugin PBW:
+
+- [Universal AI v0.1.0 PBW](https://raw.githubusercontent.com/ericlmccormick/Pebble-Universal-AI/builds/previews/Universal_AI_plugin.pbw)
+- [144×144 store icon](https://raw.githubusercontent.com/ericlmccormick/Pebble-Universal-AI/builds/previews/Universal_AI_144x144.png)
+- [80×80 store icon](https://raw.githubusercontent.com/ericlmccormick/Pebble-Universal-AI/builds/previews/Universal_AI_80x80.png)
+- [25×25 transparent monochrome menu icon](https://raw.githubusercontent.com/ericlmccormick/Pebble-Universal-AI/builds/previews/Universal_AI_25x25_menu.png) (for future watchapp consumers; a plugin-only project has no watch launcher).
+
+All generated icons are validated for their exact dimensions in GitHub Actions.

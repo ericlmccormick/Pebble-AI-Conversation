@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
+<defs>
+<linearGradient id="rim" x1="0" y1="0.15" x2="1" y2="0.95"><stop offset="0" stop-color="#00f4f4"/><stop offset=".34" stop-color="#149cff"/><stop offset=".71" stop-color="#6245ff"/><stop offset="1" stop-color="#df31f9"/></linearGradient>
+<linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a406c"/><stop offset=".32" stop-color="#071a4a"/><stop offset=".72" stop-color="#0b082b"/><stop offset="1" stop-color="#220934"/></linearGradient>
+</defs>
+<path d="M47 12 H103 C122 12 136 26 136 46 V93 C136 112 122 125 103 125 H50 L26 137 C22 139 19 136 20 131 L22 113 C12 105 8 94 8 81 V49 C8 28 24 12 47 12 Z" stroke="url(#rim)" stroke-width="7" stroke-linejoin="round" fill="url(#body)"/>
+<path d="M39 91 L55.6 49 H65 L81.6 91 H71.8 L68.6 81.7 H51.8 L48.6 91 Z M54.5 74 H65.9 L60.2 58 Z" fill="#fff"/>
+<path d="M85.5 49 H94.8 V91 H85.5 Z" fill="#fff"/>
+<path d="M107.5 19 C109.4 29.4 113.7 33.2 124 35.1 C113.7 37 109.4 41 107.5 51 C105.6 41 101.3 37 91 35.1 C101.3 33.2 105.6 29.4 107.5 19 Z" fill="#fff"/>
+<path d="M120 38 C121.2 44.5 124.1 47.2 131 48.5 C124.1 49.8 121.2 52.5 120 59 C118.8 52.5 115.9 49.8 109 48.5 C115.9 47.2 118.8 44.5 120 38 Z" fill="#fff"/>
+</svg>

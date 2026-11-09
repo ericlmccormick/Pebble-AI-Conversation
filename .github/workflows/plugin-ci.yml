@@ -26,6 +26,28 @@ jobs:
           node tests/settings_ui.test.cjs
           node tests/universal_protocol.test.cjs
           node tests/sdk.test.cjs
+      - name: Render and validate publishing icons
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/universal-ai-icons
+          /tmp/universal-ai-icons/bin/pip install --quiet cairosvg
+          mkdir -p build/store
+          /tmp/universal-ai-icons/bin/python - <<'PY'
+          from pathlib import Path
+          import struct
+          from cairosvg import svg2png
+          render = [
+              ('store-assets/universal-ai-icon.svg', 'build/store/Universal_AI_144x144.png', 144),
+              ('store-assets/universal-ai-icon.svg', 'build/store/Universal_AI_80x80.png', 80),
+              ('store-assets/universal-ai-menu-25.svg', 'build/store/Universal_AI_25x25_menu.png', 25),
+          ]
+          for source, output, size in render:
+              svg2png(url=source, write_to=output, output_width=size, output_height=size)
+              data=Path(output).read_bytes()
+              assert data[:8] == bytes.fromhex('89504e470d0a1a0a')
+              assert struct.unpack('>II', data[16:24]) == (size, size), output
+              print('Verified publishing icon', output, size, 'x', size)
+          PY
       - name: Package directly installable Pebble plugin
         run: |
           set -euo pipefail
@@ -66,6 +88,9 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/pebble-plugin-preview
           cp build/*.pbw /tmp/pebble-plugin-preview/Universal_AI_plugin.pbw
+          cp build/store/Universal_AI_144x144.png /tmp/pebble-plugin-preview/
+          cp build/store/Universal_AI_80x80.png /tmp/pebble-plugin-preview/
+          cp build/store/Universal_AI_25x25_menu.png /tmp/pebble-plugin-preview/
       - name: Publish direct-download PBW branch
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
@@ -83,6 +108,9 @@ jobs:
           rm -rf build
           rm -f Gemini_Conversation_plugin.pbw AI_Conversation_plugin.pbw
           cp /tmp/pebble-plugin-preview/Universal_AI_plugin.pbw ./
+          cp /tmp/pebble-plugin-preview/Universal_AI_144x144.png ./
+          cp /tmp/pebble-plugin-preview/Universal_AI_80x80.png ./
+          cp /tmp/pebble-plugin-preview/Universal_AI_25x25_menu.png ./
           printf 'Universal AI v0.1.0. Source commit: %s\n' "$GITHUB_SHA" > README.txt
           git add -A
           if ! git diff --cached --quiet; then
