@@ -1,6 +1,6 @@
 {
   "name": "pebble-universal-ai-plugin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "Eric McCormick",
   "pebble": {
     "displayName": "Universal AI",
@@ -19,13 +19,14 @@
             "api.anthropic.com",
             "api.x.ai",
             "openrouter.ai",
-            "api.deepseek.com"
+            "api.deepseek.com",
+            "api.meta.ai"
           ]
         }
       }
     ],
     "plugin": {
-      "description": "Universal AI is a multi-provider Pebble agent plugin. Connect to Gemini, OpenAI, Claude, Grok, OpenRouter or DeepSeek with one provider-neutral conversation API. Text in, full reply out.",
+      "description": "Universal AI connects Pebble apps to Gemini, OpenAI, Claude, Grok, OpenRouter, DeepSeek and Meta Muse using one provider-neutral agent API with complete text replies.",
       "script": "src/plugin/index.js",
       "definesPermissions": [
         {
@@ -277,6 +278,6 @@
         }
       ]
     },
-    "version": "0.1.0"
+    "version": "0.1.1"
   }
 }

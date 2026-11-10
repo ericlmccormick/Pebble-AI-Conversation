@@ -30,6 +30,12 @@ async function fetch(url,params){
      stop_reason:'end_turn',content:[{type:'text',text:'Claude response'}],
      usage:{input_tokens:20,output_tokens:8}})};
  }
+ if(url.includes('api.meta.ai')){
+   return {ok:true,json:async()=>({id:'chatcmpl_meta001',model:model||'muse-spark-1.3',
+     choices:[{finish_reason:forceIncomplete?'length':'stop',
+       message:{role:'assistant',content:forceEmpty?'':'Muse response'}}],
+     usage:{prompt_tokens:17,completion_tokens:6,total_tokens:23}})};
+ }
  return {ok:true,json:async()=>({id:'chatcmpl_123',model:model||'unknown',
    choices:[{finish_reason:forceIncomplete?'length':'stop',
      message:{content:'Compatible completion'}}],usage:{prompt_tokens:11,completion_tokens:5,total_tokens:16}})};
@@ -55,7 +61,10 @@ function source(item){return new Promise(resolve=>handlers.source({category:'age
  assert.equal(caps.data.schema_version,1);
  assert.equal(caps.data.provider,'gemini');
  assert.equal(caps.data.configured,false);
- assert.equal(caps.data.providers.length,6);
+ assert.equal(caps.data.providers.length,7);
+ assert.ok(caps.data.providers.some(p=>p.id==='muse'&&p.default_model==='muse-spark-1.3'));
+ const noMuseKey=await config({type:'save',provider:'muse',model:'muse-spark-1.3'});
+ assert.equal(noMuseKey.ok,false,'Meta requires an independent Model API key');
  assert.equal(JSON.stringify(caps).includes('test-secret'),false);
  let result=await action('send_message',{text:'Hello',request_id:'req_gemini001'});
  assert.equal(result.code,'AUTH_REQUIRED');
@@ -106,7 +115,8 @@ function source(item){return new Promise(resolve=>handlers.source({category:'age
   ['anthropic','claude-sonnet-4-5','api.anthropic.com','x-api-key','anthropic-key','Claude response'],
   ['xai','grok-4-fast','api.x.ai','Authorization','Bearer xai-key','Compatible completion'],
   ['openrouter','openai/gpt-5-mini','openrouter.ai','Authorization','Bearer openrouter-key','Compatible completion'],
-  ['deepseek','deepseek-chat','api.deepseek.com','Authorization','Bearer deepseek-key','Compatible completion']
+  ['deepseek','deepseek-chat','api.deepseek.com','Authorization','Bearer deepseek-key','Compatible completion'],
+  ['muse','muse-spark-1.3','api.meta.ai','Authorization','Bearer muse-key','Muse response']
  ];
  for(const [provider,model,host,authKey,authValue,answer] of cases){
   const cfg=await config({type:'save',provider,model,api_key:provider+'-key'});
@@ -123,12 +133,33 @@ function source(item){return new Promise(resolve=>handlers.source({category:'age
   const last=calls[calls.length-1];
   assert.ok(last.url.includes(host));
   assert.equal(last.params.headers[authKey],authValue);
+  if(provider==='muse'){
+   assert.equal(last.url,'https://api.meta.ai/v1/chat/completions');
+   const payload=JSON.parse(last.params.body);
+   assert.equal(payload.model,'muse-spark-1.3');
+   assert.equal(payload.max_completion_tokens,1200);
+   assert.equal(payload.messages.length,2);
+   assert.equal(payload.messages[0].role,'developer');
+   assert.equal(payload.messages[1].role,'user');
+   assert.equal(payload.messages[1].content,'Question');
+   assert.equal(payload.temperature,undefined);
+   assert.equal(response.data.provider_response_id,'chatcmpl_meta001');
+   assert.equal(response.data.usage.total_tokens,23);
+  }
   assert.equal(JSON.stringify(response.data).includes(provider+'-key'),false);
   assert.equal((await action('get_message',{request_id:'request_'+provider+'001'})).data.text,answer);
   const continuation=await action('send_message',{text:'Follow up',conversation_id:response.data.conversation_id,
     request_id:'follow_'+provider+'001'});
   assert.equal(continuation.ok,true);
   assert.equal(continuation.data.conversation_id,response.data.conversation_id);
+  if(provider==='muse'){
+   const continuationBody=JSON.parse(calls[calls.length-1].params.body);
+   assert.equal(continuationBody.messages.length,4);
+   assert.equal(continuationBody.messages[2].role,'assistant');
+   assert.equal(continuationBody.messages[2].content,'Muse response');
+   assert.equal(continuationBody.messages[3].content,'Follow up');
+   assert.equal(secure.get('ai_conversation_api_key_v1_muse'),'muse-key');
+  }
  }
  await config({type:'save',provider:'openai',model:'gpt-5-mini'});
  // Native Core Devices contract: assistant text in result.text, not JSON text.
@@ -168,6 +199,8 @@ function source(item){return new Promise(resolve=>handlers.source({category:'age
  assert.equal(capsAfter.data.configured,true);
  assert.equal(capsAfter.data.configured_providers.gemini,true);
  assert.equal(capsAfter.data.configured_providers.anthropic,true);
+ assert.equal(capsAfter.data.configured_providers.muse,true);
+ assert.equal(capsAfter.data.models.muse,'muse-spark-1.3');
  assert.equal(capsAfter.data.models.anthropic,'claude-sonnet-4-5');
  assert.equal(JSON.stringify(capsAfter).includes('anthropic-key'),false);
  // Never allow session histories from one provider or model to cross over.
@@ -204,6 +237,14 @@ function source(item){return new Promise(resolve=>handlers.source({category:'age
  assert.equal(forgetGemini.ok,true);
  assert.equal((await action('get_message',{request_id:'req_gemini001'})).code,'INVALID_ARGS');
  assert.equal((await action('get_message',{request_id:'request_anthropic001'})).ok,true);
+ const museBeforeForget=await action('get_message',{request_id:'request_muse001'});
+ assert.equal(museBeforeForget.ok,true);
+ const forgetMuse=await config({type:'forget',provider:'muse'});
+ assert.equal(forgetMuse.ok,true);
+ assert.equal((await action('get_message',{request_id:'request_muse001'})).code,'INVALID_ARGS');
+ assert.equal((await action('get_message',{request_id:'request_anthropic001'})).ok,true,
+   'forgetting Meta must not delete another provider response');
+ assert.equal(secure.has('ai_conversation_api_key_v1_muse'),false);
  // Stale pending requests are uncertain; the host may have been interrupted.
  store.set('ai_conversation_request_v1_stale_req_001',JSON.stringify({
    text:'A previous request',provider:'gemini',model:'gemini-3.8-flash',
@@ -226,7 +267,9 @@ function source(item){return new Promise(resolve=>handlers.source({category:'age
  assert.equal(actions.some(a=>a.name==='send_message'),true);
  assert.equal(actions.some(a=>a.name==='get_message'),true);
  assert.equal(actions.some(a=>a.name==='get_capabilities'),true);
- assert.equal(manifest.pebble.usesPermissions[0].parameters.domains.length,6);
+ assert.equal(manifest.pebble.usesPermissions[0].parameters.domains.length,7);
+ assert.ok(manifest.pebble.usesPermissions[0].parameters.domains.includes('api.meta.ai'));
+ assert.equal(manifest.version,'0.1.1');
  assert.equal(manifest.version,manifest.pebble.version,'package and Pebble versions must match');
  assert.equal(manifest.pebble.displayName,'Universal AI');
  assert.equal(manifest.name,'pebble-universal-ai-plugin');

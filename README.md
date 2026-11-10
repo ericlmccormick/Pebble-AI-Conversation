@@ -1,6 +1,6 @@
 # Universal AI — Pebble Plugin
 
-**Universal AI v0.1.0** is a provider-neutral AI agent plugin for Pebble phone apps, providing a unified text-in / full-reply-out interface across six AI providers. Store category: **agent**. Plugin UUID: `2c5edc42-b096-4f76-b284-1f27907e6501`.
+**Universal AI v0.1.1** is a provider-neutral AI agent plugin for Pebble phone apps, providing a unified text-in / full-reply-out interface across seven AI providers. Store category: **agent**. Plugin UUID: `2c5edc42-b096-4f76-b284-1f27907e6501`.
 
 ## Supported providers
 - Google Gemini: native `generateContent`.
@@ -9,10 +9,13 @@
 - xAI Grok: Chat Completions-compatible API.
 - OpenRouter: Chat Completions-compatible API for many routed models.
 - DeepSeek: Chat Completions-compatible API.
+- **Meta Muse**: official Meta Model API Chat Completions, defaulting to Muse Spark 1.3; also offers Spark 1.2, Spark 1.1, and Muse Wonder 1.0.
 
 Each provider has its **own secure API key and model selection** in plugin settings. App developers never need to know or configure the selected provider, model, endpoint or credential.
 
-These are official API endpoints; consumer ChatGPT Plus, Google AI Pro, Claude subscriptions and other accounts do not automatically include API usage. This plugin is not a wrapper around the existing send-only ChatGPT/Muse/Claude Pebble plugins. No known supported public Muse API has been verified.
+These are official API endpoints; consumer ChatGPT Plus, Google AI Pro, Claude subscriptions and other accounts do not automatically include API usage. This plugin is not a wrapper around the existing send-only ChatGPT/Muse/Claude Pebble plugins. **Meta Muse here means direct access to Meta's Model API**, not the separate Pebble Muse agent/plugin; their notification and conversation histories are not shared.
+
+Meta Muse uses `https://api.meta.ai/v1/chat/completions` with its own Model API key in Pebble secure storage. The default `muse-spark-1.3` uses **Standard mode**, which Meta says does not use submitted prompts or responses for model training. Contributor model variants are not in the preset list: they may allow training, and entering one manually triggers an explicit confirmation in the settings page. See [Meta's authentication guide](https://dev.meta.ai/docs/authentication), [Muse models](https://dev.meta.ai/docs/muse-spark), and [pricing and data-use terms](https://dev.meta.ai/docs/pricing-rate-limits).
 
 ## Research and common design findings
 
@@ -141,7 +144,7 @@ For new integrations, use `send_to_agent` or `send_message`. The original Gemini
 ## Security / deployment
 Credentials are stored in `Pebble.secureStorage` separately per provider; `get_capabilities` reveals only booleans and model names. Provider domains are restricted in the plugin manifest. Session history and recent request records are stored only on the paired phone. There is no retry after uncertain delivery. Provider-specific usage billing applies.
 
-API protocol details were researched against vendor documentation. Access to a provider/model may depend on account permissions and API changes. Hardware and live account tests are still needed before App Store publication.
+API protocol details were researched against vendor documentation. Access to a provider/model may depend on account permissions and API changes. Automated tests mock provider API responses, verify Muse routing, key isolation, model selection, reply parsing and session continuity; an **authenticated live Meta API call still requires a developer-provided Model API key**. Hardware and live account tests are recommended.
 
 ## Reusable PebbleKit JS SDK
 Copy [sdk/ai_conversation.js](sdk/ai_conversation.js) into the consuming app's `src/pkjs`. Its `create(Pebble).send(text,{conversation_id?,request_id?,instructions?})` calls `send_message`, checks that the request ID matches, verifies the schema/receipt timestamps and returns the normalized response. The helper never exposes provider credentials, constructs a model name, or decides which API endpoint to use. The provider-specific decisions live entirely inside the plugin. A lightweight test is in `tests/sdk.test.cjs`.
@@ -150,13 +153,13 @@ Copy [sdk/ai_conversation.js](sdk/ai_conversation.js) into the consuming app's `
 
 The plugin-only PBW is installable on the **phone**, not a watchapp with a watch launcher.
 Its category is `agent` (derived from both manifest `plugin.sources`).
-Version is `0.1.0`; its UUID is unchanged.
+Version is `0.1.1`; its UUID is unchanged.
 
 The release workflow renders icon artwork from `store-assets/universal-ai-icon.svg`
 and the binary 25-pixel mask in `store-assets/universal-ai-menu-25.svg`.
 Pebble App Store listing icons are uploaded **separately** from the plugin PBW:
 
-- [Universal AI v0.1.0 PBW](https://raw.githubusercontent.com/ericlmccormick/Pebble-Universal-AI/builds/previews/Universal_AI_plugin.pbw)
+- [Universal AI v0.1.1 PBW](https://raw.githubusercontent.com/ericlmccormick/Pebble-Universal-AI/builds/previews/Universal_AI_plugin.pbw)
 - [144×144 store icon](https://raw.githubusercontent.com/ericlmccormick/Pebble-Universal-AI/builds/previews/Universal_AI_144x144.png)
 - [80×80 store icon](https://raw.githubusercontent.com/ericlmccormick/Pebble-Universal-AI/builds/previews/Universal_AI_80x80.png)
 - [25×25 transparent monochrome menu icon](https://raw.githubusercontent.com/ericlmccormick/Pebble-Universal-AI/builds/previews/Universal_AI_25x25_menu.png) (for future watchapp consumers; a plugin-only project has no watch launcher).

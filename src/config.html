@@ -19,6 +19,7 @@
 <option value="xai">xAI Grok</option>
 <option value="openrouter">OpenRouter (multiple AI services)</option>
 <option value="deepseek">DeepSeek</option>
+<option value="muse">Meta Muse (Model API)</option>
 </select><p class="hint">These are official API providers, not the consumer-account send-only Pebble plugins.</p></div>
 </section>
 <section class="panel"><div class="panel-head"><span class="step">2</span><h2>Credentials and model</h2></div>
@@ -49,7 +50,8 @@ var lists={
  anthropic:['claude-sonnet-4-5','claude-haiku-4-5','claude-opus-4-5'],
  xai:['grok-4-fast','grok-4'],
  openrouter:['openai/gpt-5-mini','anthropic/claude-sonnet-4-5','google/gemini-2.5-flash'],
- deepseek:['deepseek-chat','deepseek-reasoner']
+ deepseek:['deepseek-chat','deepseek-reasoner'],
+ muse:['muse-spark-1.3','muse-spark-1.2','muse-spark-1.1','muse-wonder-1.0']
 };
 var pricing={
  gemini:'https://ai.google.dev/gemini-api/docs/pricing',
@@ -57,7 +59,8 @@ var pricing={
  anthropic:'https://platform.claude.com/docs/en/about-claude/pricing',
  xai:'https://docs.x.ai/developers/models',
  openrouter:'https://openrouter.ai/models',
- deepseek:'https://api-docs.deepseek.com/quick_start/pricing'
+ deepseek:'https://api-docs.deepseek.com/quick_start/pricing',
+ muse:'https://dev.meta.ai/docs/pricing-rate-limits'
 };
 var provider='gemini',snapshot=null,models={},isLiveModels=false;
 function send(m){return Pebble.sendMessage('plugin',m);}
@@ -83,7 +86,9 @@ function populate(){
  var ready=snapshot&&snapshot.configured_providers&&snapshot.configured_providers[provider];
  $('key-label').textContent='API key · '+$('provider').options[$('provider').selectedIndex].text;
  $('key-state').textContent=ready?'API key saved for this provider. Leave blank to retain it.':'No key saved for this provider.';
- $('price').textContent='Check the linked official pricing page for the exact model and token rate. The plugin does not estimate charges or silently change your selected model.';
+ $('price').textContent=provider==='muse'?
+   'Meta Model API requires a separate API key and pay-as-you-go billing. Listed Muse models use Standard mode (not used to train Meta models). Contributor model IDs entered manually may permit training; review Meta\'s terms before choosing one.':
+   'Check the linked official pricing page for the exact model and token rate. The plugin does not estimate charges or silently change your selected model.';
  $('key').value='';
 }
 $('provider').addEventListener('change',function(){
@@ -101,6 +106,8 @@ $('refresh').addEventListener('click',function(){
 });
 $('save').addEventListener('click',function(){
  var model=modelValue();if(!model){status('Select or enter a model ID.','error');return;}
+ if(provider==='muse'&&/-contributor$/.test(model)&&
+    !confirm('Meta Contributor mode may use prompts and responses to train future models. Use this model anyway?'))return;
  $('save').disabled=true;status('Saving provider and model…');
  send({type:'save',provider:provider,model:model,api_key:$('key').value}).then(function(r){
   if(!r.ok)throw Error(r.error||'Save failed');

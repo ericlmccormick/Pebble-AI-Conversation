@@ -61,10 +61,11 @@ jobs:
               package=json.load(f)
           assert package['pebble']['uuid']=='2c5edc42-b096-4f76-b284-1f27907e6501'
           assert package['name']=='pebble-universal-ai-plugin'
-          assert package['version']=='0.1.0'
-          assert package['pebble']['version']=='0.1.0'
+          assert package['version']=='0.1.1'
+          assert package['pebble']['version']=='0.1.1'
           assert package['pebble']['displayName']=='Universal AI'
           assert all(item['category']=='agent' for item in package['pebble']['plugin']['sources'])
+          assert 'api.meta.ai' in package['pebble']['usesPermissions'][0]['parameters']['domains']
           packages=glob.glob('build/*.pbw')
           assert len(packages)==1,packages
           with zipfile.ZipFile(packages[0]) as z:
@@ -111,7 +112,7 @@ jobs:
           cp /tmp/pebble-plugin-preview/Universal_AI_144x144.png ./
           cp /tmp/pebble-plugin-preview/Universal_AI_80x80.png ./
           cp /tmp/pebble-plugin-preview/Universal_AI_25x25_menu.png ./
-          printf 'Universal AI v0.1.0. Source commit: %s\n' "$GITHUB_SHA" > README.txt
+          printf 'Universal AI v0.1.1. Source commit: %s\n' "$GITHUB_SHA" > README.txt
           git add -A
           if ! git diff --cached --quiet; then
             git commit -m "build: plugin preview from ${GITHUB_SHA}"

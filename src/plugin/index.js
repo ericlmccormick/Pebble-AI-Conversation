@@ -162,7 +162,8 @@ var PROVIDERS={
   anthropic:{label:'Anthropic Claude',defaultModel:'claude-sonnet-4-5',domain:'api.anthropic.com'},
   xai:{label:'xAI Grok',defaultModel:'grok-4-fast',domain:'api.x.ai'},
   openrouter:{label:'OpenRouter',defaultModel:'openai/gpt-5-mini',domain:'openrouter.ai'},
-  deepseek:{label:'DeepSeek',defaultModel:'deepseek-chat',domain:'api.deepseek.com'}
+  deepseek:{label:'DeepSeek',defaultModel:'deepseek-chat',domain:'api.deepseek.com'},
+  muse:{label:'Meta Muse',defaultModel:'muse-spark-1.3',domain:'api.meta.ai'}
 };
 function currentProvider(){
   var p=localStorage.getItem(PROVIDER_KEY)||'gemini';
@@ -320,6 +321,11 @@ function requestFor(provider,model,system,turns){
     body={model:model,max_tokens:800,system:system,messages:turns};
     headers['anthropic-version']='2023-06-01';
     headers['anthropic-dangerous-direct-browser-access']='true';
+  }else if(provider==='muse'){
+    // Meta Model API Chat Completions: developer instructions, standard API-key auth.
+    url='https://api.meta.ai/v1/chat/completions';
+    body={model:model,max_completion_tokens:1200,
+      messages:[{role:'developer',content:system}].concat(turns)};
   }else{
     url=provider==='xai'?'https://api.x.ai/v1/chat/completions':
       provider==='openrouter'?'https://openrouter.ai/api/v1/chat/completions':
