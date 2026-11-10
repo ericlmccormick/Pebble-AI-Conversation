@@ -1,1 +1,1 @@
-Universal AI v0.1.0. Source commit: ec7642b4695fa1f870193df369954051db24aa66
+Universal AI v0.1.1. Source commit: 09295e0e9cbf06584096bd3bde9f412a6abed139
